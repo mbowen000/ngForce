@@ -39,8 +39,11 @@ module.exports = function(grunt) {
 		},
 		uglify: {
 			options: {
+				compress:false,
+				mangle: false,
+				beautify: true,
 				sourceMap: true,
-				banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n' +
+				banner: '/*! <%= pkg.name %> - customized by smb - <%= grunt.template.today("yyyy-mm-dd") %> */\n' +
 					'/*! visit https://noeticpenguin.github.io/ngForce for more info. */\n'
 			},
 			ngForce: {
