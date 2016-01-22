@@ -259,10 +259,14 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String create(String objtype, String fields) {
+	public static Map<String, Object> create(String objtype, String fields) {
+
 		Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objtype);
 		if (targetType == null) {
-			return '[{"message":"The requested resource does not exist","errorCode":"NOT_FOUND"}]';
+			Map<String,Object> err = new Map<String, Object>();
+			err.put('message', 'The requested resource does not exist');
+			err.put('errorCode', 'NOT_FOUND');
+			return err;
 		}
 
 		Map<String, Schema.sObjectField> targetFields = targetType.getDescribe().fields.getMap();
@@ -273,7 +277,10 @@ global class ngForceController {
 
 		String error = writeFields(objType, obj, fields);
 		if (error != null) {
-			return error;
+			Map<String,Object> err = new Map<String, Object>();
+			err.put('message', error);
+			err.put('errorCode', 'ERROR_WRITING_FIELDS');
+			return err;
 		}
 
 		try {
@@ -286,7 +293,11 @@ global class ngForceController {
 				}
 				fieldNames += '"' + field + '"';
 			}
-			return '[{"fields":[' + fieldNames + '],"message":"' + dmle.getDmlMessage(0) + '","errorCode":"' + dmle.getDmlType(0).name() + '"}]';
+			//return '[{"fields":[' + fieldNames + '],"message":"' + dmle.getDmlMessage(0) + '","errorCode":"' + dmle.getDmlType(0).name() + '"}]';
+			Map<String,Object> err = new Map<String, Object>();
+			err.put('message', dmle.getDmlMessage(0));
+			err.put('errorCode', dmle.getDmlType(0).name());
+			return err;
 		}
 
 		Map<String, Object> result = new Map<String, Object>();
@@ -294,7 +305,8 @@ global class ngForceController {
 		result.put('errors', new List<String>());
 		result.put('success', true);
 
-		return JSON.serialize(result);
+		//return JSON.serialize(result);
+		return result;
 	}
 
 	@remoteAction
@@ -430,7 +442,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String upser(String objtype, String externalIdField, String externalId, String fields) {
+	public static Map<String,Object> upser(String objtype, String externalIdField, String externalId, String fields) {
 		Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objtype);
 
 		SObject obj = targetType.newSObject();
@@ -444,9 +456,23 @@ global class ngForceController {
 
 		Schema.SObjectField sobjField = targetType.getDescribe().fields.getMap().get(externalIdField);
 
-		Database.Upsert(obj, sobjField);
+		try {
+			Database.Upsert(obj, sobjField);
+			Map<String,Object> response = new Map<String,Object>();
+			response.put('success', true);
+			response.put('objectCreated', obj);
+		}
+		catch(Exception e) {
+			Map<String,Object> error = new Map<String,Object>();
+			error.put('message', e.getMessage());
+			error.put('errorCode', 'ERROR_DURING_UPSERT');
+			return error;
+		}
 
-		return null;
+		Map<String,Object> response = new Map<String,Object>();
+		response.put('success', true);
+		response.put('objectCreated', obj);
+		return response;
 	}
 
 	@remoteAction

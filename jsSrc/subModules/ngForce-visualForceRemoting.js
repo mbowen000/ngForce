@@ -13,6 +13,7 @@
  * the .send() method, which enables bootstraping any class.method so long
  * as it's a legit js Remoting action.
  *
+ * modified by smb (mbowen)
  */
 angular.module('ngForce')
 	.provider('vfr', function() {
