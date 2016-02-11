@@ -310,11 +310,14 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String bulkCreate(String objtype, String fields) {
+	public static Map<String, Object> bulkCreate(String objtype, String fields) {
 		Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objtype);
 		Map<String, Schema.sObjectField> targetFields = targetType.getDescribe().fields.getMap();
 		if (targetType == null) {
-			return '[{"message":"The requested resource does not exist","errorCode":"NOT_FOUND"}]';
+			//return '[{"message":"The requested resource does not exist","errorCode":"NOT_FOUND"}]';
+			Map<String, Object> message = new Map<String,Object>();
+			message.put('message', 'The requested resource does not exist');
+			return message;
 		}
 
 		List<sObject> objs = new List<sObject>();
@@ -323,7 +326,10 @@ global class ngForceController {
 		try {
 			incomingFieldJsonObject = (Map<String, Object>)JSON.deserializeUntyped(fields);
 		} catch (JSONException je) {
-			return '[{"message":"' + je.getMessage() + '","errorCode":"JSON_PARSER_ERROR"}]';
+			//return '[{"message":"' + je.getMessage() + '","errorCode":"JSON_PARSER_ERROR"}]';
+			Map<String, Object> message = new Map<String,Object>();
+			message.put('message', je.getMessage());
+			return message;
 		}
 
 		try {
@@ -349,7 +355,10 @@ global class ngForceController {
 				objs.add(obj);
 			}
 		} catch (SObjectException soe) {
-			return '[{"message":"' + soe.getMessage() + '","errorCode":"INVALID_FIELD"}]';
+			//return '[{"message":"' + soe.getMessage() + '","errorCode":"INVALID_FIELD"}]';
+			Map<String, Object> message = new Map<String,Object>();
+			message.put('message', soe.getMessage());
+			return message;
 		}
 
 		try {
@@ -362,7 +371,11 @@ global class ngForceController {
 				}
 				fieldNames += '"' + field + '"';
 			}
-			return '[{"fields":[' + fieldNames + '],"message":"' + dmle.getDmlMessage(0) + '","errorCode":"' + dmle.getDmlType(0).name() + '"}]';
+			//return '[{"fields":[' + fieldNames + '],"message":"' + dmle.getDmlMessage(0) + '","errorCode":"' + dmle.getDmlType(0).name() + '"}]';
+			// todo: re-create level of detail about which insert failed like before
+			Map<String, Object> message = new Map<String,Object>();
+			message.put('message', dmle.getDmlMessage(0));
+			return message;
 		}
 
 		List<Id> rids = new List<Id>();
@@ -375,7 +388,7 @@ global class ngForceController {
 		result.put('errors', new List<String>());
 		result.put('success', true);
 
-		return JSON.serialize(result);
+		return result;
 	}
 
 	/**
