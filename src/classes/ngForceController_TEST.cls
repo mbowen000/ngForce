@@ -97,11 +97,12 @@ public class ngForceController_TEST {
 		                    '{"Name": "' + accName + '", ' +
 		                    '"AccountNumber" : "' + accNumber + '",' +
 		                    fields + '}');
-
+		
 		System.assertNotEquals(null, result,
 		                       'ngForceController.create returned null');
+		System.assert(!result.containsKey('message'), result);
 
-		Id id = (Id)result.get('Id');
+		Id id = (Id)result.get('id');
 
 		//Map<String, Object> result = (Map<String, Object>)JSON.deserializeUntyped(jsonResult);
 
@@ -316,8 +317,8 @@ public class ngForceController_TEST {
 		                    '{"Name":"' + accName + '", ' +
 		                    '"AccountNumber":"' + accNumber + '",' +
 		                    fields + '}');
-		System.assertEquals(null, jsonResult,
-		                    'Non-null result from ngForceController.upser');
+		System.assertNotEquals(null, jsonResult,
+		                    'null result from ngForceController.upser');
 
 
 		Account account = [SELECT Id, Name, AccountNumber FROM Account WHERE id = :id LIMIT 1];
