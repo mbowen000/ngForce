@@ -429,6 +429,84 @@ global class ngForceController {
 		return JSON.serialize(result);
 	}
 
+	/**
+	 * Perform a bulk upsert operation for a JSON array of SObjects.
+	 * @param  objtype    SObject name e.g. "Account"
+	 * @param  jsonObjArr Array of SObject field data that should include the ID
+	 * @return JSON array of the records that have successfully been updated.
+	 */
+	@remoteAction public static Map<String, Object> bulkUpsert(String objtype, String jsonObjArr) {
+		Map<String, Object> message = new Map<String,Object>();
+		Type listType = Type.forName('List<' + objType + '>');
+		if (listType == null) {
+			message.put('message', 'The requested resource does not exist');
+			return message;
+		}
+
+		List<SObject> objs;
+		try {
+			objs = (List<SObject>)JSON.deserialize(jsonObjArr, listType);
+		} catch (JSONException je) {
+			message.put('message', 'Unable to deserialize the JSON data array');
+			return message;
+		}
+
+		try {
+			upsert objs;
+		} catch (DMLException dmle) {
+			message.put('message', dmle.getMessage());
+			return message;
+		}
+
+		List<Id> rids = new List<Id>();
+		for (sObject o : objs) {
+			rids.add(o.Id);
+		}
+
+		Map<String, Object> result = new Map<String, Object>();
+		result.put('id', rids);
+		result.put('errors', new List<String>());
+		result.put('success', true);
+
+		return result;
+	}
+
+	/**
+	 * Perform a bulk delete operation for a JSON array of SObjects.
+	 * @param  objtype    SObject name e.g. "Account"
+	 * @param  jsonObjArr Array of SObject field data that should include the ID
+	 * @return JSON array of the records that have successfully been updated.
+	 */
+	@remoteAction public static Map<String, Object> bulkDelete(String objtype, String jsonObjArr) {
+		Map<String, Object> message = new Map<String,Object>();
+		Type listType = Type.forName('List<' + objType + '>');
+		if (listType == null) {
+			message.put('message', 'The requested resource does not exist');
+			return message;
+		}
+
+		List<SObject> objs;
+		try {
+			objs = (List<SObject>)JSON.deserialize(jsonObjArr, listType);
+		} catch (JSONException je) {
+			message.put('message', 'Unable to deserialize the JSON data array');
+			return message;
+		}
+
+		try {
+			delete objs;
+		} catch (DMLException dmle) {
+			message.put('message', dmle.getMessage());
+			return message;
+		}
+
+		Map<String, Object> result = new Map<String, Object>();
+		result.put('errors', new List<String>());
+		result.put('success', true);
+
+		return result;
+	}
+
 	@remoteAction
 	public static String retrieve(String objtype, String id, String fieldlist) {
 		Boolean containsId = false;

@@ -157,8 +157,12 @@ angular.module('ngForce')
 					standardOptions: standardOpts,
 					// Bulk Create
 					bulkCreate: send('ngForceController.bulkCreate', this.standardOptions, false),
+					// Bulk Delete
+					bulkDelete: send('ngForceController.bulkDelete', this.standardOptions, false),
 					// Bulk Update
 					bulkUpdate: send('ngForceController.bulkUpdate', this.standardOptions, false),
+					// Bulk Upsert
+					bulkUpsert: send('ngForceController.bulkUpsert', this.standardOptions, false),
 					// Create
 					create: send('ngForceController.create', this.standardOptions, false),
 					// Clone

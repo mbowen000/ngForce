@@ -252,6 +252,7 @@ public class ngForceController_TEST {
 		fields += ']';
 		//System.assertEquals(fields, null);
 		String jsonResult = ngForceController.bulkUpdate('Account', fields);
+		ngForceController.bulkUpsert('Account', fields);
 		Map<String, Object> result = (Map<String, Object>)JSON.deserializeUntyped(jsonResult);
 		//List<Object> result = (List<Object>)JSON.deserializeUntyped(jsonResult);
 		System.AssertNotEquals(result, null);
@@ -264,6 +265,8 @@ public class ngForceController_TEST {
 
 		jsonResult2 = ngForceController.bulkUpdate('Account', fields.remove('Name'));
 		assertError(jsonResult2, 'INVALID_JSON', 'ngForceController.bulkCreate');
+
+		ngForceController.bulkUpsert('Account', fields.remove('Name'));
 
 		Set<String> accountIds = new Set<String>();
 		for (Account account : accounts) {
@@ -344,6 +347,19 @@ public class ngForceController_TEST {
 
 		jsonResult = ngForceController.del('Account', id);
 		assertError(jsonResult, 'ENTITY_IS_DELETED', 'ngForceController.del');
+	}
+
+	static testMethod void testBulkDelete() {
+		Account acc1 = new Account(Name = 'Test name 1');
+		Account acc2 = new Account(Name = 'Test name 2');
+		List<Account> accts = new List<Account> { acc1, acc2 };
+		insert accts;
+
+		ngForceController.bulkDelete('Account', JSON.serialize(accts));
+
+		List<Account> accounts = [SELECT Id, Name FROM Account WHERE Id IN :accts];
+		System.assertEquals(0, accounts.size(),
+		                    'Account records were not deleted by ngForceController.bulkDelete');
 	}
 
 	static testMethod void testGetObjType() {
