@@ -372,7 +372,7 @@ public class ngForceController_TEST {
 	}
 
 	static testMethod void testGetPicklistValues() {
-		List<pickListValues> result = ngForceController.getPicklistValues('Opportunity', 'StageName');
+		List<ngForceController.pickListValues> result = ngForceController.getPicklistValues('Opportunity', 'StageName');
 		System.assertNotEquals(0, result.size());
 	}
 
