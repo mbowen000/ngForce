@@ -181,7 +181,7 @@ global class ngForceController {
 	}
 	*/
 	@remoteAction
-	public static String getPicklistValues(String objtype, String fieldName) {
+	public static List<pickListValues> getPicklistValues(String objtype, String fieldName) {
 		Schema.SObjectType token = Schema.getGlobalDescribe().get(objtype);
 		Schema.DescribeSObjectResult dr = token.getDescribe();
 		Map<String, Schema.SObjectField> field_map = dr.fields.getMap();
@@ -193,7 +193,7 @@ global class ngForceController {
 			pv.value = plv.getValue();
 			options.add(pv);
 		}
-		return JSON.serialize(options);
+		return options;
 	}
 
 	@remoteAction
