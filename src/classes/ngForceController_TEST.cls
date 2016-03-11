@@ -372,10 +372,8 @@ public class ngForceController_TEST {
 	}
 
 	static testMethod void testGetPicklistValues() {
-		String jsonResult = ngForceController.getPicklistValues('Opportunity', 'StageName');
-		System.assertNotEquals(null, jsonResult);
-		List<Object> result = (List<Object>)JSON.deserializeUntyped(jsonResult);
-		System.assertNotEquals(null, result);
+		List<pickListValues> result = ngForceController.getPicklistValues('Opportunity', 'StageName');
+		System.assertNotEquals(0, result.size());
 	}
 
 	static testMethod void testBulkCreate() {
