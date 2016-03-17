@@ -90,7 +90,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String describe(String objtype) {
+	global static String describe(String objtype) {
 		// Just enough to make the sample app work!
 		Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objtype);
 		if (targetType == null) {
@@ -130,7 +130,7 @@ global class ngForceController {
 	 * These methods are available only after you have established a fieldset
 	 * on an object.
 	@remoteAction
-	public static String describeFieldSet(String objtype, String fieldSetName) {
+	global static String describeFieldSet(String objtype, String fieldSetName) {
 	Schema.SObjectType token = Schema.getGlobalDescribe().get(objtype);
 	Schema.DescribeSObjectResult dr = token.getDescribe();
 	Map<String, Schema.FieldSet> FsMap = dr.fieldSets.getMap();
@@ -138,7 +138,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String describeField(String objtype, String fieldName) {
+	global static String describeField(String objtype, String fieldName) {
 	Schema.SObjectType token = Schema.getGlobalDescribe().get(objtype);
 	Schema.DescribeSObjectResult dr = token.getDescribe();
 	Schema.DescribeFieldResult fieldDescribe = dr.fields.getMap().get(fieldName).getDescribe();
@@ -146,7 +146,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String soqlFromFieldSet(String objtype, String fieldSetName) {
+	global static String soqlFromFieldSet(String objtype, String fieldSetName) {
 	Schema.SObjectType token = Schema.getGlobalDescribe().get(objtype);
 	Schema.DescribeSObjectResult dr = token.getDescribe();
 	Map<String, Schema.FieldSet> FsMap = dr.fieldSets.getMap();
@@ -164,7 +164,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String queryFromFieldSet(String id, String fieldSetName) {
+	global static String queryFromFieldSet(String id, String fieldSetName) {
 	Id objId = (id) Id;
 	Schema.SObjectType token = objId.getSObjectType();
 	Schema.DescribeSObjectResult dr = token.getDescribe();
@@ -181,7 +181,7 @@ global class ngForceController {
 	}
 	*/
 	@remoteAction
-	public static List<pickListValues> getPicklistValues(String objtype, String fieldName) {
+	global static List<pickListValues> getPicklistValues(String objtype, String fieldName) {
 		Schema.SObjectType token = Schema.getGlobalDescribe().get(objtype);
 		Schema.DescribeSObjectResult dr = token.getDescribe();
 		Map<String, Schema.SObjectField> field_map = dr.fields.getMap();
@@ -197,7 +197,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String getQueryResultsAsSelect2Data(String soql) {
+	global static String getQueryResultsAsSelect2Data(String soql) {
 		List<sObject> records;
 		try {
 			records = Database.query(soql);
@@ -221,7 +221,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String sObjectKlone(String iId) {
+	global static String sObjectKlone(String iId) {
 		Id id = (id) iId;
 		sObjectType type = id.getSObjectType();
 		Schema.DescribeSObjectResult dr = type.getDescribe();
@@ -248,7 +248,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String getObjType(String Id) {
+	global static String getObjType(String Id) {
 		Id objId = (id) Id;
 		Schema.SObjectType token = objId.getSObjectType();
 		Schema.DescribeSObjectResult dr = token.getDescribe();
@@ -259,7 +259,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static Map<String, Object> create(String objtype, String fields) {
+	global static Map<String, Object> create(String objtype, String fields) {
 
 		Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objtype);
 		if (targetType == null) {
@@ -310,7 +310,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static Map<String, Object> bulkCreate(String objtype, String fields) {
+	global static Map<String, Object> bulkCreate(String objtype, String fields) {
 		Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objtype);
 		Map<String, Schema.sObjectField> targetFields = targetType.getDescribe().fields.getMap();
 		if (targetType == null) {
@@ -397,7 +397,7 @@ global class ngForceController {
 	 * @param  jsonObjArr Array of SObject field data that should include the ID
 	 * @return JSON array of the records that have successfully been updated.
 	 */
-	@remoteAction public static String bulkUpdate(String objtype, String jsonObjArr) {
+	@remoteAction global static String bulkUpdate(String objtype, String jsonObjArr) {
 		Type listType = Type.forName('List<' + objType + '>');
 		if (listType == null) {
 			return makeError('The requested resource does not exist', 'NOT_FOUND');
@@ -435,7 +435,7 @@ global class ngForceController {
 	 * @param  jsonObjArr Array of SObject field data that should include the ID
 	 * @return JSON array of the records that have successfully been updated.
 	 */
-	@remoteAction public static Map<String, Object> bulkUpsert(String objtype, String jsonObjArr) {
+	@remoteAction global static Map<String, Object> bulkUpsert(String objtype, String jsonObjArr) {
 		Map<String, Object> message = new Map<String,Object>();
 		Type listType = Type.forName('List<' + objType + '>');
 		if (listType == null) {
@@ -477,7 +477,7 @@ global class ngForceController {
 	 * @param  jsonObjArr Array of SObject field data that should include the ID
 	 * @return JSON array of the records that have successfully been updated.
 	 */
-	@remoteAction public static Map<String, Object> bulkDelete(String objtype, String jsonObjArr) {
+	@remoteAction global static Map<String, Object> bulkDelete(String objtype, String jsonObjArr) {
 		Map<String, Object> message = new Map<String,Object>();
 		Type listType = Type.forName('List<' + objType + '>');
 		if (listType == null) {
@@ -508,7 +508,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String retrieve(String objtype, String id, String fieldlist) {
+	global static String retrieve(String objtype, String id, String fieldlist) {
 		Boolean containsId = false;
 		for (String field : fieldlist.split(',')) {
 			if (field.equalsIgnoreCase('id')) {
@@ -533,7 +533,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static Map<String,Object> upser(String objtype, String externalIdField, String externalId, String fields) {
+	global static Map<String,Object> upser(String objtype, String externalIdField, String externalId, String fields) {
 		Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objtype);
 
 		SObject obj = targetType.newSObject();
@@ -567,7 +567,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String updat(String objtype, String id, String fields) {
+	global static String updat(String objtype, String id, String fields) {
 		Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objtype);
 		if (targetType == null) {
 			return '[{"message":"The requested resource does not exist","errorCode":"NOT_FOUND"}]';
@@ -600,7 +600,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String del(String objtype, String id) {
+	global static String del(String objtype, String id) {
 		Schema.SObjectType targetType = Schema.getGlobalDescribe().get(objtype);
 		if (targetType == null) {
 			return '[{"message":"The requested resource does not exist","errorCode":"NOT_FOUND"}]';
@@ -625,7 +625,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String query(String soql) {
+	global static String query(String soql) {
 		List<sObject> records;
 		try {
 			records = Database.query(soql);
@@ -642,7 +642,7 @@ global class ngForceController {
 	}
 
 	@remoteAction
-	public static String search(String sosl) {
+	global static String search(String sosl) {
 		system.debug('$$$$$$$$$' + sosl);
 		List<List<SObject>> result;
 		try {
