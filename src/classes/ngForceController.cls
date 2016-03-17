@@ -4,18 +4,18 @@ global class ngForceController {
 	* Modified Version of RemoteTKController
 	*/
 
-	public class picklistValues {
+	global class picklistValues {
 		String label {get; set;}
 		String value {get; set;}
 	}
 
-	public class Select2Data {
+	global class Select2Data {
 		@TestVisible String id               {get; set;}
 		@TestVisible String name             {get; set;}
 		@TestVisible String searchName {get; set;}
 	}
 
-	public class QueryString {
+	global class QueryString {
 		@TestVisible String selectClause {get; set;}
 		@TestVisible String fromClause {get; set;}
 	}
