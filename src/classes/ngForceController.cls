@@ -657,4 +657,54 @@ global class ngForceController {
 		return JSON.serialize(result);
 	}
 
+	@remoteAction
+	global static String updateFormulaFields(String objType, String jsonObjArr) {
+		Type listType = Type.forName('List<' + objType + '>');
+		if (listType == null) {
+			return makeError('The requested resource does not exist', 'NOT_FOUND');
+		}
+
+		List<SObject> objs;
+		try {
+			objs = (List<SObject>)JSON.deserialize(jsonObjArr, listType);
+		} catch (JSONException je) {
+			return makeError('Unable to deserialize the JSON data array', 'INVALID_JSON');
+		}
+
+		try {
+			// recalc
+			// note: This method doesn’t recalculate cross-object formulas. If you call this method on objects that have both cross-object and non-cross-object formula fields, only the non-cross-object formula fields are recalculated.
+			for(sObject obj : objs) {
+				obj.recalculateFormulas();
+			}	
+		} catch (Exception recalcException) {
+			return makeError(recalcException.getMessage(), 'Recalculation Exception');
+		}
+
+		// todo: get the latest updated items and return them as response
+		try {
+			for(sObject obj : objs) {
+				// add the ids to a map
+			}
+			// soql (could we call another method in the class to short-cut?)
+
+			// return the results...
+		}
+		catch(DMLException dmle) {
+			return makeError(dmle.getMessage(), 'Error retrieving updates after formula recalculations');
+		}
+
+		List<Id> rids = new List<Id>();
+		for (sObject o : objs) {
+			rids.add(o.Id);
+		}
+
+		Map<String, Object> result = new Map<String, Object>();
+		result.put('id', rids);
+		result.put('errors', new List<String>());
+		result.put('success', true);
+
+		return JSON.serialize(result);
+	}
+
 }
