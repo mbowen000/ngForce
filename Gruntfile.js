@@ -53,7 +53,7 @@ module.exports = function(grunt) {
 			},
 			requirements: {
 				files: {
-					'build/ngForce-dependencies.min.js': ['buildTmp/lib/*.annotated.js']
+					'build/ngForce-dependencies.min.js': ['buildTmp/lib/underscore.annotated.js', 'buildTmp/lib/*.annotated.js']
 				}
 			},
 			oneFile: {
@@ -185,6 +185,12 @@ module.exports = function(grunt) {
 				}
 			},
 		},
+		watch: {
+			scripts: {
+				files:'jsSrc/subModules/**/*.js',
+				tasks: ['min']
+			}
+		}
 
 	});
 
