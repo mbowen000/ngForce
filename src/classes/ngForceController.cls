@@ -55,7 +55,7 @@ global class ngForceController {
 				Object value = fieldMap.get(key);
 				Schema.DisplayType valueType = targetFields.get(key).getDescribe().getType();
 
-				if (value instanceof String && valueType != Schema.DisplayType.String) {
+				if (value != null && value instanceof String && valueType != Schema.DisplayType.String) {
 					// Coerce an incoming String to the correct type
 					String svalue = (String)value;
 
