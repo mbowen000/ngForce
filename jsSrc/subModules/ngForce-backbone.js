@@ -52,11 +52,19 @@
           
             if(!isUndefined(options.success) && _.isFunction(options.success)) {
               options.success(results.records);
+              if(options.def) {
+                // todo: see if we can resolve a deferred here
+                options.def.resolve(result.records);
+              }
             }
           
           }).catch(function(err) {
           
             options.error(err);
+            if(options.def) {
+              // todo: see if we can resolve a deferred here
+              options.def.reject(err);
+            }
           
           }).finally(function() {
 
@@ -106,21 +114,44 @@
         return $http.apply($http, arguments);
       };
 
-      buildQueryString = function(fields, objectName) {
 
-        // todo: refactor this to be recursive -- should be able to go infinite levels deep building subqueries - even though salesforce wont!
-        var process = function(value, index, list) {
-          if(!value.relationship) {
-            return value.name;
+      buildQueryString = function(model, depth, collection) {
+        var qstring = "";
+        var depth = depth || 0;
+        if(depth != 0) {
+          qstring += '( ';
+        }
+        qstring += 'SELECT ';
+        for(var i=0; i<model.fields.length; i++) {
+          var field = model.fields[i];
+          if(!field.relationship) {
+            qstring += field.name;
           }
           else {
-            // should return (SELECT Model.fields FROM Model.objectType)
-            return '(SELECT ' + _.pluck(value.collection.prototype.model.prototype.fields, 'name').join(', ') + ' FROM ' + value.collection.prototype.name + ')';
+            // if it has a relationship -- recurse!
+            qstring += buildQueryString(field.collection.prototype.model.prototype, depth+1, field.collection);
           }
+          // add a comma if not last
+          if(i<(model.fields.length-1)) {
+              qstring += ", ";
+          }
+          if(field.filters && field.filters.length > 0) {
+            // todo, could move this to another method
+            qstring += "WHERE "
+            for(var j=0; j<field.filters.length; j++) {  
+              var filter = field.filters[j];
+              qstring += filter.name += filter.operator += filter.criteria;
+            }
+          }
+        };
+        // end field loop
+        qstring += collection ? (' FROM ' + collection.prototype.name) : (' FROM ' + model.objectType);
+        //qstring += ' FROM ' + model.objectType;
+        if(depth != 0) {
+          qstring += ')';  
         }
-
-        return 'SELECT ' + _.map(fields, process).join(', ') + ' FROM ' + objectName;
-        //todo add filters, etc.
+        
+        return qstring;
       }
 
       return _.extend(Backbone, {
@@ -214,11 +245,7 @@
 
         getQueryString: function() {
           // todo: figure out how to call this
-          return Backbone.buildQueryString(this.prototype.fields, this.prototype.objectType);
-        },
-
-        createSubModels: function(results) {
-          console.log(results);
+          //return Backbone.buildQueryString(this.prototype.fields, this.prototype.objectType);
         },
 
         constructor: function NgBackboneModel() {
@@ -238,8 +265,6 @@
             });
           });
 
-          this.on('sync', this.createSubModels);
-
           this.on('sync error', this.$resetStatus);
 
           return Backbone.Model.apply(this, arguments);
@@ -248,7 +273,6 @@
         initialize: function(options) {
           var self = this;
           _.map(this.fields, function(field, index) {
-            console.log(field);
             if(field.relationship && field.relationship === 'OneToMany') {
               var recordset = self.get(field.collection.prototype.name);
               if(recordset) {
@@ -424,8 +448,11 @@
       return Backbone.Collection.extend({
         model: NgBackboneModel,
         getQueryString: function() {
+          var querystring = "";
           // todo: figure out how to call this
-          return Backbone.buildQueryString(this.model.prototype.fields, this.model.prototype.objectType);
+          querystring = Backbone.buildQueryString(this.model.prototype);
+          console.log(querystring);
+          return querystring;
         },
         constructor: function NgBackboneCollection() {
           var self = this;
