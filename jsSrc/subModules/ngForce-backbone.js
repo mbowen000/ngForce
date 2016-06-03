@@ -184,6 +184,7 @@
           qstring += '( ';
         }
         qstring += 'SELECT ';
+
         for(var i=0; i<model.fields.length; i++) {
           var field = model.fields[i];
           if(!field.relationship) {
@@ -197,20 +198,30 @@
           if(i<(model.fields.length-1)) {
               qstring += ", ";
           }
-          if(field.filters && field.filters.length > 0) {
-            // todo, could move this to another method
-            qstring += "WHERE "
-            for(var j=0; j<field.filters.length; j++) {  
-              var filter = field.filters[j];
-              qstring += filter.name += filter.operator += filter.criteria;
-            }
-          }
-        };
+        }
         // end field loop
+
         qstring += parentField ? (' FROM ' + parentField.name) : (' FROM ' + model.objectType);
         //qstring += ' FROM ' + model.objectType;
         if(depth != 0) {
           qstring += ')';  
+        }
+
+        //filter
+        if(model.filters && model.filters.length > 0) {
+          // todo, could move this to another method
+          qstring += ' WHERE ';
+
+          for(var j=0; j<model.filters.length; j++) {  
+            var filter = model.filters[j];
+
+            if (filter.criteria.indexOf('=') > -1) {
+              filter.criteria = filter.criteria.replace('=', '');
+              filter.criteria = model.attributes[filter.name];
+            }
+
+            qstring += filter.name += filter.operator += ('\'' + filter.criteria + '\'');
+          }
         }
         
         return qstring;
@@ -312,7 +323,8 @@
         // todo: call that gets sobjects describe information and turns into fields[] array above
 
         getQueryString: function() {
-            return Backbone.buildQueryString(this);
+            var queryString = Backbone.buildQueryString(this);
+            return queryString;
         },
 
         constructor: function NgBackboneModel() {
