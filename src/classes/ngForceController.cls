@@ -651,7 +651,7 @@ global class ngForceController {
 				}
 				fieldNames += '"' + field + '"';
 			}
-			return '[{"fields":[' + fieldNames + '],"message":"' + dmle.getDmlMessage(0) + '","errorCode":"' + dmle.getDmlType(0).name() + '"}]';
+			return '[{"fields":[' + fieldNames + '],"message":"' + dmle.getDmlMessage(0).trim() + '","errorCode":"' + dmle.getDmlType(0).name() + '"}]';
 		}
 
 		return null;
