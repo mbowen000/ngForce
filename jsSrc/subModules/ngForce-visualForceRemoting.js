@@ -110,7 +110,12 @@ angular.module('ngForce')
 				function handleResultWithPromise(result, event, nullok, deferred) {
 					if (result) {
 						if (typeof result !== 'object') {
-							result = JSON.parse(result);
+							try {
+								result = JSON.parse(result);
+							}
+							catch(e) {
+								deferred.reject(e.message);
+							}
 						}
 						if (Array.isArray(result) && result.length !== 0 && result[0].message && result[0].errorCode) {
 							//Handle INVALID_SESSION_ID err coming back

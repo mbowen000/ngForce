@@ -12,7 +12,7 @@
       @description
       To make Backbone work properly with AngularJS, ng-backbone overrides Backbone's sync and ajax methods.
     */
-    factory('Backbone', ['$http','vfr', function($http, vfr) {
+    factory('Backbone', ['$http','vfr','$q', function($http, vfr, $q) {
       var methodMap, sync, ajax, buildQueryString, isUndefined = _.isUndefined;
 
       methodMap = {
@@ -48,7 +48,7 @@
         /**
         * IF WE'RE FETCHING
         **/
-        
+
         if(httpMethod === 'GET') {
           params.query = _.result(model, 'getQueryString');
 
@@ -76,6 +76,26 @@
           });
         }
 
+        /** If were deleting **/
+        if(httpMethod === 'DELETE') {
+          if(_.has(model, 'models')) {
+            // todo: implement delete for entire collections...
+          }
+          else {
+            // delete a single model
+            if(!model.objectType) {
+              throw new Error('No object')
+            }
+            var xhr = vfr.del(model.objectType, model.get(model.idAttribute)).then(function(response) {
+              options.success(response);
+              return response;
+            }).catch(function(err) {
+              options.error(err);
+              return err;
+            })
+          }
+        }
+
         /**
         * IF WE'RE SAVING RECORD(S)
         **/
@@ -90,13 +110,19 @@
               var models = [model.getWritableFields()];
             }
             // stringify
+            if(!models || models.length < 1) {
+              options.error('No Models to Save');
+              return $q.reject('No models to save');
+            }
             models = JSON.stringify(models);
             var objType = model.objectType || model.name;
 
             var xhr = vfr.bulkUpsert(objType, models).then(function(results) {
               options.success(single ? results.updated[0] : results.updated);
+              return results;
             }).catch(function(err) {
               options.error(err);
+              return err;
             });
         }
 
@@ -281,7 +307,7 @@
 
         getQueryString: function() {
           // todo: figure out how to call this
-          //return Backbone.buildQueryString(this.prototype.fields, this.prototype.objectType);
+          return Backbone.buildQueryString(this.prototype.fields, this.prototype.objectType);
         },
 
         constructor: function NgBackboneModel() {
