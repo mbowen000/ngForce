@@ -65,7 +65,7 @@ global class ngForceController {
 					} else if ( valueType == Schema.DisplayType.DateTime) {
 						obj.put(key, DateTime.valueOf(svalue));
 					} else if (valueType == Schema.DisplayType.Percent ||
-					           valueType == Schema.DisplayType.Currency) {
+							valueType == Schema.DisplayType.Currency) {
 						obj.put(key, svalue == '' ? null : Decimal.valueOf(svalue));
 					} else if (valueType == Schema.DisplayType.Double) {
 						obj.put(key, svalue == '' ? null : Double.valueOf(svalue));
@@ -342,7 +342,7 @@ global class ngForceController {
 					} else if ( targetFields.get(property).getDescribe().getType() == Schema.DisplayType.DateTime) {
 						obj.put(property, DateTime.valueOf((String)current.get(property)));
 					} else if (targetFields.get(property).getDescribe().getType() == Schema.DisplayType.Percent ||
-					           targetFields.get(property).getDescribe().getType() == Schema.DisplayType.Currency) {
+							targetFields.get(property).getDescribe().getType() == Schema.DisplayType.Currency) {
 						obj.put(property, String.valueOf(current.get(property)) == '' ? null : Decimal.valueOf((String)current.get(property)));
 					} else if (targetFields.get(property).getDescribe().getType() == Schema.DisplayType.Double) {
 						obj.put(property, String.valueOf(current.get(property)) == '' ? null : Double.valueOf(current.get(property)));
@@ -435,27 +435,29 @@ global class ngForceController {
 	 * @param  jsonObjArr Array of SObject field data that should include the ID
 	 * @return JSON array of the records that have successfully been updated.
 	 */
-	@remoteAction global static Map<String, Object> bulkUpsert(String objtype, String jsonObjArr) {
+	@remoteAction global static String bulkUpsert(String objtype, String jsonObjArr) {
 		Map<String, Object> message = new Map<String,Object>();
 		Type listType = Type.forName('List<' + objType + '>');
 		if (listType == null) {
 			message.put('message', 'The requested resource does not exist');
-			return message;
+			return JSON.serialize(message);
 		}
 
 		List<SObject> objs;
+		List<Object> objsUntyped;
 		try {
 			objs = (List<SObject>)JSON.deserialize(jsonObjArr, listType);
+			objsUntyped = (List<Object>)JSON.deserializeUntyped(jsonObjArr);
 		} catch (JSONException je) {
 			message.put('message', 'Unable to deserialize the JSON data array');
-			return message;
+			return JSON.serialize(message);
 		}
 
 		try {
 			upsert objs;
 		} catch (DMLException dmle) {
 			message.put('message', dmle.getMessage());
-			return message;
+			return JSON.serialize(message);
 		}
 
 		List<Id> rids = new List<Id>();
@@ -463,12 +465,43 @@ global class ngForceController {
 			rids.add(o.Id);
 		}
 
+		// get the fields that were written as a default
+		// todo: we can probably pass the fields ilst optionally for more retrival (like formulas)
+		Schema.SObjectType sobjtype = Schema.getGlobalDescribe().get(objType);
+		Map<String, Schema.SObjectField> fieldDescMap = sobjtype.getDescribe().fields.getMap();
+
+		List<string> fieldsList = new List<String>();
+		List<sObject> updatedObjs = new List<sObject>();
+
+//		for(Schema.SObjectField sfield : fieldDescMap.values()) {
+//            Schema.describefieldresult dfield = sfield.getDescribe();
+//			System.debug(dfield);
+//			if(dfield.isUpdateable() || dfield.isCalculated() || dfield.isAutoNumber()) {
+//				System.debug('passed');
+//				fieldsList.add(dfield.getName());
+//			}
+//        }
+		// we'll only get the fields that are in the request
+		Map<String, Object> fieldsUntyped = (Map<String,Object>)objsUntyped.get(0);
+		fieldsList = new List<String>(fieldsUntyped.keySet());
+
+		System.debug(fieldsList);
+
+		String fieldsString = String.join(fieldsList, ', ');
+		String idsString = '\'' + String.join(rids, '\', \'') + '\'';
+		String q = 'SELECT ' + fieldsString + ' FROM ' + objType + ' WHERE Id IN (' + idsString + ')';
+		System.debug('Query: ' + q);
+
 		Map<String, Object> result = new Map<String, Object>();
+		updatedObjs = Database.query(q);
+		System.debug(updatedObjs);
+
 		result.put('id', rids);
+		result.put('updated', updatedObjs);
 		result.put('errors', new List<String>());
 		result.put('success', true);
 
-		return result;
+		return JSON.serialize(result);
 	}
 
 	/**
@@ -540,7 +573,7 @@ global class ngForceController {
 		obj.put(externalIdField, externalId);
 
 		Map<String, Object> fieldMap =
-		  (Map<String, Object>)JSON.deserializeUntyped(fields);
+				(Map<String, Object>)JSON.deserializeUntyped(fields);
 		for (String key : fieldMap.keySet()) {
 			obj.put(key, fieldMap.get(key));
 		}

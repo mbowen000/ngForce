@@ -44,6 +44,11 @@
         if (httpMethod === 'GET' && !isUndefined(options.data)) {
           params.params = options.data;
         }
+
+        /**
+        * IF WE'RE FETCHING
+        **/
+        
         if(httpMethod === 'GET') {
           params.query = _.result(model, 'getQueryString');
 
@@ -70,6 +75,31 @@
 
           });
         }
+
+        /**
+        * IF WE'RE SAVING RECORD(S)
+        **/
+        if(httpMethod === 'PUT' || httpMethod === 'POST') {
+            var single = false;
+            // should handle if its a collection or single model
+            if(_.has(model, 'models')) {
+              var models = _.result(model, 'getChangedModels', []);
+            }
+            else {
+              single = true;
+              var models = [model.getWritableFields()];
+            }
+            // stringify
+            models = JSON.stringify(models);
+            var objType = model.objectType || model.name;
+
+            var xhr = vfr.bulkUpsert(objType, models).then(function(results) {
+              options.success(single ? results.updated[0] : results.updated);
+            }).catch(function(err) {
+              options.error(err);
+            });
+        }
+
 
         
         /*
@@ -115,7 +145,7 @@
       };
 
 
-      buildQueryString = function(model, depth, collection) {
+      buildQueryString = function(model, depth, parentField) {
         var qstring = "";
         var depth = depth || 0;
         if(depth != 0) {
@@ -129,7 +159,7 @@
           }
           else {
             // if it has a relationship -- recurse!
-            qstring += buildQueryString(field.collection.prototype.model.prototype, depth+1, field.collection);
+            qstring += buildQueryString(field.collection.prototype.model.prototype, depth+1, field);
           }
           // add a comma if not last
           if(i<(model.fields.length-1)) {
@@ -145,7 +175,7 @@
           }
         };
         // end field loop
-        qstring += collection ? (' FROM ' + collection.prototype.name) : (' FROM ' + model.objectType);
+        qstring += parentField ? (' FROM ' + parentField.name) : (' FROM ' + model.objectType);
         //qstring += ' FROM ' + model.objectType;
         if(depth != 0) {
           qstring += ')';  
@@ -234,6 +264,12 @@
 
       return Backbone.Model.extend({
 
+        // url must be defined, but we dont need that for salesforce- we'll just set that to noop
+        url: 'noop',
+
+        // the id attribute in salesforce is 'Id'
+        idAttribute: 'Id',
+
         fields: [{
           name: 'Id'
         }],
@@ -271,21 +307,31 @@
         },
 
         initialize: function(options) {
-          var self = this;
-          _.map(this.fields, function(field, index) {
-            if(field.relationship && field.relationship === 'OneToMany') {
-              var recordset = self.get(field.collection.prototype.name);
-              if(recordset) {
-                self.set(field.collection.prototype.name, new field.collection(self.get(field.collection.prototype.name).records));
-              }
-              else {
-                self.set(field.collection.prototype.name, new field.collection([]));
-              }
-              
-            }
-          });
-
           return Backbone.Model.prototype.initialize.apply(this, arguments);
+        },
+
+        parse: function(response, options) {
+
+          if(response) {
+            var self = this;
+            var newprops
+            _.map(this.fields, function(field, index) {
+              if(field.relationship && field.relationship === 'OneToMany') {
+                var recordset = response[field.name];
+                if(recordset) {
+
+                  //self.set(field.name, new field.collection(self.get(field.name).records), {silent: true});
+                  response[field.name] = new field.collection(recordset.records);
+                }
+                else if(!_.has(self.attributes, field.name)) {
+                  response[field.name] = new field.collection([]);
+                  //self.set(field.name, new field.collection([]), {silent: true});
+                }
+              }
+            });
+          }
+
+          return response;
         },
 
         set: function(key, val, options) {
@@ -388,6 +434,16 @@
 
         $removeBinding: function(attr, options) {
           return this.$setBinding(attr, void 0, _.extend({}, options, {unset: true}));
+        },
+
+        getWritableFields: function() {
+            var self = this;
+            return _.pick(_.omit(self.attributes, 'attributes'), function(field, key) {
+              var fieldDef = _.findWhere(self.fields, {name: key});
+              if(fieldDef && !fieldDef.relationship) {
+                return true;
+              }
+            });
         }
       });
     }]).
@@ -447,6 +503,7 @@
     factory('NgBackboneCollection', ['Backbone', 'NgBackboneModel', function(Backbone, NgBackboneModel) {
       return Backbone.Collection.extend({
         model: NgBackboneModel,
+        url: 'noop',
         getQueryString: function() {
           var querystring = "";
           // todo: figure out how to call this
@@ -536,6 +593,45 @@
             saving:   false,
             syncing:  false
           });
+        },
+
+        getChangedModels: function() {
+          var changed = [];
+          _.each(this.models, function(model) {
+            if(model.hasChanged()) {
+              changed.push(model.getWritableFields());
+            }
+          });
+
+          return changed;
+          // return _.map(this.models, function(model) {
+          //   if(model.isChanged) {
+          //     return model.attributes;
+          //   }
+          // });
+        },
+
+        save: function(options) {
+          options = _.extend({
+            // any default here
+          }, options);
+          var collection = this;
+          options.success = function(resp) {
+            // for a collection, we need to update all the models beneath it with any changed values
+            var models = [];
+            var self = this;
+            _.each(resp, function(record) {
+                models.push(Backbone.Collection.prototype._prepareModel(record));
+            });
+            collection.set(models, {
+              remove: false
+            });
+            collection.trigger("sync", collection, resp, options);
+          }
+          options.error = function(err) {
+            collection.trigger("error", collection, err, options);
+          }
+          this.sync('update', this, options);
         }
       });
     }]);
