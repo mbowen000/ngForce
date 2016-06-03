@@ -24,6 +24,12 @@
       };
 
       sync = function(method, model, options) {
+        var single = true;
+
+        if(_.has(model, 'models')) {
+          single = false;
+        }
+
         // Default options to empty object
         if (isUndefined(options)) {
           options = {};
@@ -54,9 +60,9 @@
 
           // in the callback we will return the data
           var xhr = vfr.query(params.query).then(function(results) {
-          
+            
             if(!isUndefined(options.success) && _.isFunction(options.success)) {
-              options.success(results.records);
+              options.success(single ? results.records[0] : results.records);
               if(options.def) {
                 // todo: see if we can resolve a deferred here
                 options.def.resolve(result.records);
@@ -80,14 +86,14 @@
         * IF WE'RE SAVING RECORD(S)
         **/
         if(httpMethod === 'PUT' || httpMethod === 'POST') {
-            var single = false;
+          var models;
+
             // should handle if its a collection or single model
-            if(_.has(model, 'models')) {
-              var models = _.result(model, 'getChangedModels', []);
+            if(!single) {
+              models = _.result(model, 'getChangedModels', []);
             }
             else {
-              single = true;
-              var models = [model.getWritableFields()];
+              models = [model.getWritableFields()];
             }
             // stringify
             models = JSON.stringify(models);
@@ -280,8 +286,7 @@
         // todo: call that gets sobjects describe information and turns into fields[] array above
 
         getQueryString: function() {
-          // todo: figure out how to call this
-          //return Backbone.buildQueryString(this.prototype.fields, this.prototype.objectType);
+            return Backbone.buildQueryString(this);
         },
 
         constructor: function NgBackboneModel() {
