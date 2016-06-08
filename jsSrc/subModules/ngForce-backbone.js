@@ -203,6 +203,13 @@
 
         qstring += parentField ? (' FROM ' + parentField.name) : (' FROM ' + model.objectType);
         //qstring += ' FROM ' + model.objectType;
+
+        //order by
+        if (model.orderby && model.orderby.field) {
+          model.orderby.direction = model.orderby.direction || 'ASC';
+          qstring += ' ORDER BY '+model.orderby.field+' '+model.orderby.direction;
+        }
+
         if(depth != 0) {
           qstring += ')';  
         }
@@ -223,9 +230,9 @@
             qstring += filter.name += filter.operator += ('\'' + filter.criteria + '\'');
           }
         }
-        
+
         return qstring;
-      }
+      };
 
       return _.extend(Backbone, {
         sync: sync,
