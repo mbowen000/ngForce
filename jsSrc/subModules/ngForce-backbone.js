@@ -127,7 +127,6 @@
             var objType = model.objectType || model.name;
 
             var xhr = vfr.bulkUpsert(objType, models).then(function(results) {
-              console.log(results);
               options.success(single ? results.updated[0] : results.updated);
               return results;
             }).catch(function(err) {
