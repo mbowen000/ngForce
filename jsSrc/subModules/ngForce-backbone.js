@@ -24,6 +24,12 @@
       };
 
       sync = function(method, model, options) {
+        var single = true;
+
+        if(_.has(model, 'models')) {
+          single = false;
+        }
+
         // Default options to empty object
         if (isUndefined(options)) {
           options = {};
@@ -48,15 +54,14 @@
         /**
         * IF WE'RE FETCHING
         **/
-
+        
         if(httpMethod === 'GET') {
           params.query = _.result(model, 'getQueryString');
 
           // in the callback we will return the data
           var xhr = vfr.query(params.query).then(function(results) {
-          
             if(!isUndefined(options.success) && _.isFunction(options.success)) {
-              options.success(results.records);
+              options.success(single ? results.records[0] : results.records);
               if(options.def) {
                 // todo: see if we can resolve a deferred here
                 options.def.resolve(result.records);
@@ -100,24 +105,29 @@
         * IF WE'RE SAVING RECORD(S)
         **/
         if(httpMethod === 'PUT' || httpMethod === 'POST') {
-            var single = false;
+          var models = [];
+
             // should handle if its a collection or single model
-            if(_.has(model, 'models')) {
-              var models = _.result(model, 'getChangedModels', []);
+            if(!single) {
+              model.each(function(m) {
+                models.push(m.getWritableFields());
+              });
             }
             else {
-              single = true;
-              var models = [model.getWritableFields()];
+              models = [model.getWritableFields()];
             }
+
             // stringify
             if(!models || models.length < 1) {
               options.error('No Models to Save');
               return $q.reject('No models to save');
             }
+
             models = JSON.stringify(models);
             var objType = model.objectType || model.name;
 
             var xhr = vfr.bulkUpsert(objType, models).then(function(results) {
+              console.log(results);
               options.success(single ? results.updated[0] : results.updated);
               return results;
             }).catch(function(err) {
@@ -178,6 +188,7 @@
           qstring += '( ';
         }
         qstring += 'SELECT ';
+
         for(var i=0; i<model.fields.length; i++) {
           var field = model.fields[i];
           if(!field.relationship) {
@@ -191,24 +202,41 @@
           if(i<(model.fields.length-1)) {
               qstring += ", ";
           }
-          if(field.filters && field.filters.length > 0) {
-            // todo, could move this to another method
-            qstring += "WHERE "
-            for(var j=0; j<field.filters.length; j++) {  
-              var filter = field.filters[j];
-              qstring += filter.name += filter.operator += filter.criteria;
-            }
-          }
-        };
+        }
         // end field loop
+
         qstring += parentField ? (' FROM ' + parentField.name) : (' FROM ' + model.objectType);
         //qstring += ' FROM ' + model.objectType;
+
+        //order by
+        if (model.orderby && model.orderby.field) {
+          model.orderby.direction = model.orderby.direction || 'ASC';
+          qstring += ' ORDER BY '+model.orderby.field+' '+model.orderby.direction;
+        }
+
         if(depth != 0) {
           qstring += ')';  
         }
-        
+
+        //filter
+        if(model.filters && model.filters.length > 0) {
+          // todo, could move this to another method
+          qstring += ' WHERE ';
+
+          for(var j=0; j<model.filters.length; j++) {  
+            var filter = model.filters[j];
+
+            if (filter.criteria.indexOf('=') > -1) {
+              filter.criteria = filter.criteria.replace('=', '');
+              filter.criteria = model.attributes[filter.name];
+            }
+
+            qstring += filter.name += filter.operator += ('\'' + filter.criteria + '\'');
+          }
+        }
+
         return qstring;
-      }
+      };
 
       return _.extend(Backbone, {
         sync: sync,
@@ -306,8 +334,8 @@
         // todo: call that gets sobjects describe information and turns into fields[] array above
 
         getQueryString: function() {
-          // todo: figure out how to call this
-          return Backbone.buildQueryString(this.prototype.fields, this.prototype.objectType);
+            var queryString = Backbone.buildQueryString(this);
+            return queryString;
         },
 
         constructor: function NgBackboneModel() {
@@ -333,6 +361,15 @@
         },
 
         initialize: function(options) {
+          var model = this;
+          if (model.fields) {
+            _.each(model.fields, function(field) {
+              if (!model.has(field.name)) {
+                model.set(field.name, null);
+              }
+            });
+          }
+
           return Backbone.Model.prototype.initialize.apply(this, arguments);
         },
 
