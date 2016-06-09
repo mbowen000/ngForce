@@ -60,7 +60,6 @@
 
           // in the callback we will return the data
           var xhr = vfr.query(params.query).then(function(results) {
-          
             if(!isUndefined(options.success) && _.isFunction(options.success)) {
               options.success(single ? results.records[0] : results.records);
               if(options.def) {
@@ -106,24 +105,29 @@
         * IF WE'RE SAVING RECORD(S)
         **/
         if(httpMethod === 'PUT' || httpMethod === 'POST') {
-          var models;
+          var models = [];
 
             // should handle if its a collection or single model
             if(!single) {
-              models = _.result(model, 'getChangedModels', []);
+              model.each(function(m) {
+                models.push(m.getWritableFields());
+              });
             }
             else {
               models = [model.getWritableFields()];
             }
+
             // stringify
             if(!models || models.length < 1) {
               options.error('No Models to Save');
               return $q.reject('No models to save');
             }
+
             models = JSON.stringify(models);
             var objType = model.objectType || model.name;
 
             var xhr = vfr.bulkUpsert(objType, models).then(function(results) {
+              console.log(results);
               options.success(single ? results.updated[0] : results.updated);
               return results;
             }).catch(function(err) {
@@ -357,6 +361,15 @@
         },
 
         initialize: function(options) {
+          var model = this;
+          if (model.fields) {
+            _.each(model.fields, function(field) {
+              if (!model.has(field.name)) {
+                model.set(field.name, null);
+              }
+            });
+          }
+
           return Backbone.Model.prototype.initialize.apply(this, arguments);
         },
 
