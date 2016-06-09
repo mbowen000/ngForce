@@ -231,6 +231,11 @@ global class ngForceController {
 		querySet.addAll(fieldMap.keySet());
 		querySet.remove('id');
 		for (String f : querySet) {
+			//Skip compound address fields
+			if (f.contains('address')) {
+				continue;
+			}
+			
 			qs += ', ' + f;
 		}
 		qs += ' FROM ' + dr.getName() + ' WHERE id = \'' + id + '\' LIMIT 1';
