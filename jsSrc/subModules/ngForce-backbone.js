@@ -24,6 +24,7 @@
       };
 
       sync = function(method, model, options) {
+        var xhr;
         var single = true;
 
         if(_.has(model, 'models')) {
@@ -59,7 +60,7 @@
           params.query = _.result(model, 'getQueryString');
 
           // in the callback we will return the data
-          var xhr = vfr.query(params.query).then(function(results) {
+          xhr = vfr.query(params.query).then(function(results) {
             if(!isUndefined(options.success) && _.isFunction(options.success)) {
               options.success(single ? results.records[0] : results.records);
               if(options.def) {
@@ -91,13 +92,13 @@
             if(!model.objectType) {
               throw new Error('No object')
             }
-            var xhr = vfr.del(model.objectType, model.get(model.idAttribute)).then(function(response) {
+            xhr = vfr.del(model.objectType, model.get(model.idAttribute)).then(function(response) {
               options.success(response);
               return response;
             }).catch(function(err) {
               options.error(err);
               return err;
-            })
+            });
           }
         }
 
@@ -126,7 +127,7 @@
             models = JSON.stringify(models);
             var objType = model.objectType || model.name;
 
-            var xhr = vfr.bulkUpsert(objType, models).then(function(results) {
+            xhr = vfr.bulkUpsert(objType, models).then(function(results) {
               options.success(single ? results.updated[0] : results.updated);
               return results;
             }).catch(function(err) {
@@ -693,7 +694,8 @@
           options.error = function(err) {
             collection.trigger("error", collection, err, options);
           }
-          this.sync('update', this, options);
+          var xhr = this.sync('update', this, options);
+          return xhr;
         }
       });
     }]);
