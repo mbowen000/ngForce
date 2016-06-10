@@ -225,13 +225,13 @@
 
           for(var j=0; j<model.filters.length; j++) {  
             var filter = model.filters[j];
-
+            var criteria;
             if (filter.criteria.indexOf('=') > -1) {
-              filter.criteria = filter.criteria.replace('=', '');
-              filter.criteria = model.attributes[filter.name];
+              criteria = _.clone(filter.criteria).replace('=', '');
+              criteria = model.attributes[criteria];
             }
 
-            qstring += filter.name += filter.operator += ('\'' + filter.criteria + '\'');
+            qstring += filter.name + filter.operator + '\'' + criteria + '\'';
           }
         }
 
