@@ -232,7 +232,7 @@ global class ngForceController {
 		querySet.remove('id');
 		for (String f : querySet) {
 			//Skip compound address fields
-			if (f.contains('address')) {
+			if (f.contains('address') && !f.contains('__c')) {
 				continue;
 			}
 			
