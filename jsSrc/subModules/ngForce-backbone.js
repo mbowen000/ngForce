@@ -503,7 +503,7 @@
             var self = this;
             return _.pick(_.omit(self.attributes, 'attributes'), function(field, key) {
               var fieldDef = _.findWhere(self.fields, {name: key});
-              if(fieldDef && !fieldDef.relationship) {
+              if(fieldDef && !fieldDef.relationship && fieldDef.name.indexOf('.') === -1) {
                 return true;
               }
             });
