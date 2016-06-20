@@ -108,32 +108,32 @@
         if(httpMethod === 'PUT' || httpMethod === 'POST') {
           var models = [];
 
-            // should handle if its a collection or single model
-            if(!single) {
-              model.each(function(m) {
-                models.push(m.getWritableFields());
-              });
-            }
-            else {
-              models = [model.getWritableFields()];
-            }
-
-            // stringify
-            if(!models || models.length < 1) {
-              options.error('No Models to Save');
-              return $q.reject('No models to save');
-            }
-
-            models = JSON.stringify(models);
-            var objType = model.objectType || model.name;
-
-            xhr = vfr.bulkUpsert(objType, models).then(function(results) {
-              options.success(single ? results.updated[0] : results.updated);
-              return results;
-            }).catch(function(err) {
-              options.error(err);
-              return err;
+          // should handle if its a collection or single model
+          if(!single) {
+            model.each(function(m) {
+              models.push(m.getWritableFields());
             });
+          }
+          else {
+            models = [model.getWritableFields()];
+          }
+
+          // stringify
+          if(!models || models.length < 1) {
+            options.error('No Models to Save');
+            return $q.reject('No models to save');
+          }
+
+          var modelJSON = JSON.stringify(models);
+          var objType = model.objectType || model.name;
+
+          xhr = vfr.bulkUpsert(objType, modelJSON).then(function(results) {
+            options.success(single ? results.updated[0] : results.updated);
+            return results;
+          }).catch(function(err) {
+            options.error(err);
+            return err;
+          });
         }
 
 
@@ -563,7 +563,7 @@
       ```
 
     */
-    factory('NgBackboneCollection', ['Backbone', 'NgBackboneModel', function(Backbone, NgBackboneModel) {
+    factory('NgBackboneCollection', ['Backbone', 'NgBackboneModel', '$q', function(Backbone, NgBackboneModel, $q) {
       return Backbone.Collection.extend({
         model: NgBackboneModel,
         url: 'noop',
@@ -679,21 +679,23 @@
             // any default here
           }, options);
           var collection = this;
+
           options.success = function(resp) {
             // for a collection, we need to update all the models beneath it with any changed values
             var models = [];
             var self = this;
-            _.each(resp, function(record) {
-                models.push(Backbone.Collection.prototype._prepareModel(record));
+
+            collection.each(function(model, idx) {
+              model.set(resp[idx]);
             });
-            collection.set(models, {
-              remove: false
-            });
+
             collection.trigger("sync", collection, resp, options);
-          }
+          };
+
           options.error = function(err) {
             collection.trigger("error", collection, err, options);
-          }
+          };
+
           var xhr = this.sync('update', this, options);
           return xhr;
         }
