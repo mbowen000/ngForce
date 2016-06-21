@@ -85,7 +85,20 @@
         /** If were deleting **/
         if(httpMethod === 'DELETE') {
           if(_.has(model, 'models')) {
-            // todo: implement delete for entire collections...
+            if (model.length > 0) {
+              var models = [];
+              model.each(function(m) {
+                models.push(m.getWritableFields());
+              });
+
+              xhr = vfr.bulkDelete(model.at(0).objectType, JSON.stringify(models)).then(function(response) {
+                options.success(response);
+                return response;
+              }).catch(function(err) {
+                options.error(err);
+                return err;
+              });
+            }
           }
           else {
             // delete a single model
@@ -697,6 +710,11 @@
           };
 
           var xhr = this.sync('update', this, options);
+          return xhr;
+        },
+
+        destroy: function(options) {
+          var xhr = this.sync('delete', this, options);
           return xhr;
         }
       });
