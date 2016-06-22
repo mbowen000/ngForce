@@ -141,7 +141,7 @@
           var objType = model.objectType || model.name;
 
           xhr = vfr.bulkUpsert(objType, modelJSON).then(function(results) {
-            options.success(single ? results.updated[0] : results.updated);
+            options.success(single ? results.updated[0] : results);
             return results;
           }).catch(function(err) {
             options.error(err);
@@ -695,11 +695,19 @@
 
           options.success = function(resp) {
             // for a collection, we need to update all the models beneath it with any changed values
-            var models = [];
             var self = this;
 
+            //Set ids as that is an ordered list
             collection.each(function(model, idx) {
-              model.set(resp[idx]);
+              model.set({Id: resp.id[idx]});
+            });
+
+            //Match based on Id and update the models
+            _.each(resp.updated, function(rec) {
+              var model = collection.get(rec.Id);
+              if (model) {
+                model.set(rec);
+              }
             });
 
             collection.trigger("sync", collection, resp, options);
@@ -714,6 +722,27 @@
         },
 
         destroy: function(options) {
+          options = _.extend({
+            // any default here
+          }, options);
+          var collection = this;
+
+          options.success = function(resp) {
+            // for a collection, we need to update all the models beneath it with any changed values
+            var models = [];
+            var self = this;
+
+            collection.each(function(model, idx) {
+              model.set(resp[idx]);
+            });
+
+            collection.trigger("sync", collection, resp, options);
+          };
+
+          options.error = function(err) {
+            collection.trigger("error", collection, err, options);
+          };
+
           var xhr = this.sync('delete', this, options);
           return xhr;
         }
