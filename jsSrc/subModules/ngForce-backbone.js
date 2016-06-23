@@ -84,11 +84,13 @@
 
         /** If were deleting **/
         if(httpMethod === 'DELETE') {
-          if(_.has(model, 'models')) {
+          if(!single) {
             if (model.length > 0) {
               var models = [];
               model.each(function(m) {
-                models.push(m.getWritableFields());
+                if (m.has('Id') && m.get('Id')) {
+                  models.push(m.getWritableFields());
+                }
               });
 
               xhr = vfr.bulkDelete(model.at(0).objectType, JSON.stringify(models)).then(function(response) {
@@ -103,7 +105,7 @@
           else {
             // delete a single model
             if(!model.objectType) {
-              throw new Error('No object')
+              throw new Error('No object');
             }
             xhr = vfr.del(model.objectType, model.get(model.idAttribute)).then(function(response) {
               options.success(response);
