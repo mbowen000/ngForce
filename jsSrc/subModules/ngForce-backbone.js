@@ -135,8 +135,7 @@
 
           // stringify
           if(!models || models.length < 1) {
-            options.error('No Models to Save');
-            return $q.reject('No models to save');
+            return;
           }
 
           var modelJSON = JSON.stringify(models);
@@ -397,18 +396,14 @@
 
           if(response) {
             var self = this;
-            var newprops
             _.map(this.fields, function(field, index) {
               if(field.relationship && field.relationship === 'OneToMany') {
                 var recordset = response[field.name];
                 if(recordset) {
-
-                  //self.set(field.name, new field.collection(self.get(field.name).records), {silent: true});
                   response[field.name] = new field.collection(recordset.records);
                 }
-                else if(!_.has(self.attributes, field.name)) {
+                else if (!self.has(field.name)) {
                   response[field.name] = new field.collection([]);
-                  //self.set(field.name, new field.collection([]), {silent: true});
                 }
               }
             });
