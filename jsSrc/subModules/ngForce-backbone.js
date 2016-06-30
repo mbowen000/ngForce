@@ -61,24 +61,11 @@
 
           // in the callback we will return the data
           xhr = vfr.query(params.query).then(function(results) {
-            if(!isUndefined(options.success) && _.isFunction(options.success)) {
-              options.success(single ? results.records[0] : results.records);
-              if(options.def) {
-                // todo: see if we can resolve a deferred here
-                options.def.resolve(result.records);
-              }
-            }
-          
+            options.success(single ? results.records[0] : results.records);
+            return results;
           }).catch(function(err) {
-          
             options.error(err);
-            if(options.def) {
-              // todo: see if we can resolve a deferred here
-              options.def.reject(err);
-            }
-          
-          }).finally(function() {
-
+            return err;
           });
         }
 
@@ -200,10 +187,10 @@
       };
 
 
-      buildQueryString = function(model, depth, parentField) {
+      buildQueryString = function(model, depth, parentField, collection) {
         var qstring = "";
-        var depth = depth || 0;
-        if(depth != 0) {
+        depth = depth || 0;
+        if(depth !== 0) {
           qstring += '( ';
         }
         qstring += 'SELECT ';
@@ -233,7 +220,7 @@
           qstring += ' ORDER BY '+model.orderby.field+' '+model.orderby.direction;
         }
 
-        if(depth != 0) {
+        if(depth !== 0) {
           qstring += ')';  
         }
 
@@ -247,10 +234,17 @@
             var criteria;
             if (filter.criteria.indexOf('=') > -1) {
               criteria = _.clone(filter.criteria).replace('=', '');
-              criteria = model.attributes[criteria];
+
+              //check if fetching from collection, then use an init field
+              if (collection) {
+                criteria = collection.init[criteria];
+              }
+              else {
+                criteria = model.attributes[criteria];
+              }
             }
 
-            qstring += filter.name + filter.operator + '\'' + criteria + '\'';
+            qstring += filter.name +' '+ filter.operator +' '+ '\'' + criteria + '\'';
           }
         }
 
@@ -584,9 +578,7 @@
         url: 'noop',
         getQueryString: function() {
           var querystring = "";
-          // todo: figure out how to call this
-          querystring = Backbone.buildQueryString(this.model.prototype);
-          console.log(querystring);
+          querystring = Backbone.buildQueryString(this.model.prototype, null, null, this);
           return querystring;
         },
         constructor: function NgBackboneCollection() {
@@ -622,6 +614,14 @@
           });
 
           Backbone.Collection.apply(this, arguments);
+        },
+
+        initialize: function(options) {
+          var collection = this;
+          
+          collection.init = options;
+
+          return Backbone.Collection.prototype.initialize.apply(this, arguments);
         },
 
         /*
