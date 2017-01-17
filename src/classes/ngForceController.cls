@@ -109,6 +109,7 @@ global class ngForceController {
 			field.put('type', descField.getType().name().toLowerCase());
 			field.put('name', descField.getName());
 			field.put('label', descField.getLabel());
+			field.put('isUpdateable', descField.isUpdateable());
 			List<String> references = new List<String>();
 			for (Schema.sObjectType t : descField.getReferenceTo()) {
 				references.add(t.getDescribe().getName());
