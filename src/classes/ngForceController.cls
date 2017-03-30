@@ -533,7 +533,7 @@ global class ngForceController {
 		}
 
 		try {
-			delete objs;
+			Database.delete(objs, false);
 		} catch (DMLException dmle) {
 			message.put('message', dmle.getMessage());
 			return message;
