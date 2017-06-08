@@ -30,8 +30,9 @@ angular.module('ngForce')
 			 * @type {Object}
 			 */
 			var standardOpts = {
+				buffer: false,
 				escape: false,
-				timeout: 10000
+				timeout: 30000
 			}
 
 		return {
